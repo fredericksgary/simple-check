@@ -10,6 +10,14 @@
 
 (def ^:dynamic *default-test-count* 100)
 
+(defn multiplier
+  "Returns the amount to multiply the test count by. Defaults to one, use
+  the simple-check.multiplier system property to set."
+  []
+  (if-let [s (System/getProperty "simple-check.multiplier")]
+    (Integer/parseInt s)
+    1))
+
 (defmacro defspec
   "Defines a new clojure.test test var that uses `quick-check` to verify
   [property] with the given [args] (should be a sequence of generators),
@@ -29,7 +37,7 @@
       (defn ~(vary-meta name assoc
                         ::defspec true
                         :test `#(#'assert-check (assoc (~name) :test-var (str '~name))))
-        ([] (~name ~default-times))
+        ([] (~name (* ~default-times (multiplier))))
         ([times# & {:keys [seed# max-size#] :as quick-check-opts#}]
          (apply
            simple-check.core/quick-check
@@ -132,4 +140,3 @@
   (ct/report {:type ::shrinking
               ::property property-fun
               ::params (vec failing-params)}))
-
